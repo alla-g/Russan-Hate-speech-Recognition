@@ -41,26 +41,29 @@ class Preprocessor:
     def tokenize(self, sentence: str) -> List[str]:
         return self.lemmatize(nltk.word_tokenize(sentence))
 
-    def get_TFIDF_features(self, df: DataFrame, filter_stopwords: bool = False) -> Any:
+    def get_TFIDF_features(self, df: DataFrame, filter_stopwords: bool = False,
+                           vectorizer=None) -> Any:
         stopwords = nltk.corpus.stopwords.words("russian")
-
-        vectorizer = TfidfVectorizer(
-            tokenizer=self.tokenize,
-            preprocessor=self.preprocess,
-            ngram_range=(1, 3),
-            stop_words=stopwords if filter_stopwords else None,  # somehow the score is better if we keep the stopwords
-            use_idf=True,
-            smooth_idf=False,
-            norm=None,
-            decode_error='replace',
-            max_features=10000,
-            min_df=5,
-            max_df=0.501
-        )
-
-        tfidf = vectorizer.fit_transform(df['text']).toarray()
+        
+        if vectorizer == None:
+            vectorizer = TfidfVectorizer(
+                tokenizer=self.tokenize,
+                preprocessor=self.preprocess,
+                ngram_range=(1, 3),
+                stop_words=stopwords if filter_stopwords else None,  # somehow the score is better if we keep the stopwords
+                use_idf=True,
+                smooth_idf=False,
+                norm=None,
+                decode_error='replace',
+                max_features=10000,
+                min_df=5,
+                max_df=0.501
+            )
+            tfidf = vectorizer.fit_transform(df['text']).toarray()
+        else:
+            tfidf = vectorizer.transform(df['text']).toarray()
         vocab = {v: i for i, v in enumerate(vectorizer.get_feature_names())}
         idf_vals = vectorizer.idf_
         idf_dict = {i: idf_vals[i] for i in vocab.values()}
 
-        return tfidf, vocab, idf_dict
+        return tfidf, vocab, idf_dict, vectorizer
