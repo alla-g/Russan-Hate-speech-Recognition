@@ -143,10 +143,10 @@ if __name__ == "__main__":
     y_preds = model.predict(X_uncor)
     report = classification_report(y_uncor, y_preds)
     print(report)
-    plot_confusion_matrix(model, x_test, y_uncor)
+    plot_confusion_matrix(model, unUNcor, y_uncor)
 
     print('predicting on corrected')
     y_preds = model.predict(X_cor)
     report = classification_report(y_cor, y_preds)
     print(report)
-    plot_confusion_matrix(model, x_test, y_cor)
+    plot_confusion_matrix(model, X_cor, y_cor)
