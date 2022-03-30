@@ -1,7 +1,7 @@
 textstat
 pymorphy2
 dostoevsky
-nltk
+nltk==3.4
 numpy
 pandas
 scikit-learn
