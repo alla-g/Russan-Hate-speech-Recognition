@@ -1,4 +1,5 @@
 import nltk
+import pandas as pd
 import numpy as np
 from pandas import DataFrame
 from sklearn.metrics import classification_report, plot_confusion_matrix
@@ -39,7 +40,7 @@ if __name__ == "__main__":
 
     # acquire TD-IDF features
     print("acquring TF-IDF features..")
-    tfidf, vocab, idf_dict = preprocessor.get_TFIDF_features(df, filter_stopwords=False)
+    tfidf, vocab, idf_dict, vectorizer = preprocessor.get_TFIDF_features(df, filter_stopwords=False)
 
     # preprocessing stage 2: Tokenize & Lemmatize
     print("preprocessing stage 2..")
@@ -69,10 +70,83 @@ if __name__ == "__main__":
                       max_iter=3000, dual=False)
     model.fit(x_train, y_train)
 
-    y_preds = model.predict(x_test)
+    ### ADD MY TEST CORPORA ###
+    uncorrected = pd.read_csv('/content/toxicity-detection-thesis/data/uncorrected_data.tsv', sep='\t')
+    corrected = pd.read_csv('/content/toxicity-detection-thesis/data/corrected_data.tsv', sep='\t')
+    
+    uncorrected['text'] = uncorrected['text'].apply(preprocessor.preprocess)
+    corrected['text'] = corrected['text'].apply(preprocessor.preprocess)
 
-    report = classification_report(y_test, y_preds)
+    # extract the important features
+    print("extraction of features..")
+    feature_extractor = FeatureExtractor()
+    uncorrected['offensive_words_count'] = uncorrected['text'].apply(feature_extractor.find_offensive_words)
+    uncorrected['caps_words_count'] = uncorrected['text'].apply(feature_extractor.find_capsed_words)
 
+    corrected['offensive_words_count'] = corrected['text'].apply(feature_extractor.find_offensive_words)
+    corrected['caps_words_count'] = corrected['text'].apply(feature_extractor.find_capsed_words)
+
+    # if there is no sentiment data, label it automatically
+    print("initiating sentiment analyzer..")
+    uncorrected = SentimentAnalyzer().sentiment_label_dataframe(uncorrected)
+    corrected = SentimentAnalyzer().sentiment_label_dataframe(corrected)
+
+    # acquire TD-IDF features for uncor
+    print("acquring TF-IDF features for uncor..")
+    tfidf, vocab, idf_dict, _ = preprocessor.get_TFIDF_features(uncorrected,
+                                                                vectorizer=vectorizer,
+                                                                filter_stopwords=False)
+    # preprocessing stage 2: Tokenize & Lemmatize
+    print("preprocessing stage 2..")
+    uncorrected['text'] = uncorrected['text'].apply(preprocessor.tokenize)
+    uncorrected['text'] = uncorrected['text'].apply(preprocessor.lemmatize)
+    # extracting the textual features
+    print("extracting features..")
+    feats = feature_extractor.get_feature_array(uncorrected)
+    M = np.concatenate([tfidf, feats], axis=1)
+    variables = [''] * len(vocab)
+    for k, v in vocab.items():
+        variables[v] = k
+
+    feature_names = variables + feature_extractor.get_feature_names()
+
+    X_uncor = DataFrame(M)
+
+    # acquire TD-IDF features for cor
+    print("acquring TF-IDF features for uncor..")
+    tfidf, vocab, idf_dict, _ = preprocessor.get_TFIDF_features(corrected,
+                                                                vectorizer=vectorizer,
+                                                                filter_stopwords=False)
+    # preprocessing stage 2: Tokenize & Lemmatize
+    print("preprocessing stage 2..")
+    corrected['text'] = corrected['text'].apply(preprocessor.tokenize)
+    corrected['text'] = corrected['text'].apply(preprocessor.lemmatize)
+    # extracting the textual features
+    print("extracting features..")
+    feats = feature_extractor.get_feature_array(corrected)
+    M = np.concatenate([tfidf, feats], axis=1)
+    variables = [''] * len(vocab)
+    for k, v in vocab.items():
+        variables[v] = k
+
+    feature_names = variables + feature_extractor.get_feature_names()
+
+    X_cor = DataFrame(M)
+
+    # конец препроца #
+
+    y_uncor = uncorrected['toxicity'].astype(int)
+    y_cor = corrected['toxicity'].astype(int)
+
+    ### PREDICT ON MY TEST ###
+    print('predicting on uncorrected')
+    y_preds = model.predict(X_uncor)
+    report = classification_report(y_uncor, y_preds)
     print(report)
+    plot_confusion_matrix(model, x_test, y_uncor)
 
-    plot_confusion_matrix(model, x_test, y_test)
+    print('predicting on corrected')
+    y_preds = model.predict(X_cor)
+    report = classification_report(y_cor, y_preds)
+    print(report)
+    plot_confusion_matrix(model, x_test, y_cor)
