@@ -1,8 +1,12 @@
 import nltk
 import pandas as pd
 import numpy as np
+import seaborn as sns
+import matplotlib.pyplot as plt
+
 from pandas import DataFrame
-from sklearn.metrics import classification_report, plot_confusion_matrix
+from sklearn.metrics import classification_report, plot_confusion_matrix, \
+confusion_matrix
 from sklearn.model_selection import train_test_split
 from sklearn.svm import LinearSVC
 
@@ -13,6 +17,19 @@ from src.sentiment_analyzer import SentimentAnalyzer
 
 nltk.download('punkt')
 nltk.download('stopwords')
+
+def plot_matrix(golds, preds):
+    cm = confusion_matrix(golds, preds)
+    ax = sns.heatmap(cm, annot=True, cmap='Blues')
+
+    ax.set_title('Confusion Matrix');
+    ax.set_xlabel('\nPredicted Values')
+    ax.set_ylabel('True Values ')
+
+    ax.xaxis.set_ticklabels(['Not toxic','Toxic'])
+    ax.yaxis.set_ticklabels(['Not toxic','Toxic'])
+
+    plt.show()
 
 if __name__ == "__main__":
 
@@ -143,10 +160,12 @@ if __name__ == "__main__":
     y_preds = model.predict(X_uncor)
     report = classification_report(y_uncor, y_preds)
     print(report)
-    plot_confusion_matrix(model, unUNcor, y_uncor)
+    plot_confusion_matrix(model, X_uncor, y_uncor)
+    plot_matrix(y_uncor, y_preds)
 
     print('predicting on corrected')
     y_preds = model.predict(X_cor)
     report = classification_report(y_cor, y_preds)
     print(report)
     plot_confusion_matrix(model, X_cor, y_cor)
+    plot_matrix(y_cor, y_preds)
