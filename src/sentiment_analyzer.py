@@ -7,6 +7,7 @@ class SentimentAnalyzer:
 
     def __init__(self):
         self.tokenizer = RegexTokenizer()
+        FastTextSocialNetworkModel.MODEL_PATH = '/content/Russan-Hate-speech-Recognition/fasttext-social-network-model.bin'
         self.model = FastTextSocialNetworkModel(tokenizer=self.tokenizer)
 
     def _map_sentiment(self, sentiment):
