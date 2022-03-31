@@ -28,7 +28,8 @@ def plot_matrix(golds, preds):
 
     ax.xaxis.set_ticklabels(['Not toxic','Toxic'])
     ax.yaxis.set_ticklabels(['Not toxic','Toxic'])
-
+    
+    print(f'МАТРИЦА: {cm}')
     plt.show()
 
 if __name__ == "__main__":
