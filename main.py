@@ -94,7 +94,7 @@ if __name__ == "__main__":
     processed = pd.read_csv('/content/toxicity-detection-thesis/data/preprocessed_data.tsv', sep='\t')
     
     uncorrected['text'] = uncorrected['text'].apply(preprocessor.preprocess)
-    corrected['text'] = corrected['comment'].apply(preprocessor.preprocess)
+    corrected['text'] = corrected['corrected'].apply(preprocessor.preprocess)
     processed['text'] = processed['preprocessed'].apply(preprocessor.preprocess)
 
     # extract the important features
