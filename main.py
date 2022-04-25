@@ -91,9 +91,11 @@ if __name__ == "__main__":
     ### ADD MY TEST CORPORA ###
     uncorrected = pd.read_csv('/content/toxicity-detection-thesis/data/uncorrected_data.tsv', sep='\t')
     corrected = pd.read_csv('/content/toxicity-detection-thesis/data/corrected_data.tsv', sep='\t')
+    processed = pd.read_csv('/content/toxicity-detection-thesis/data/preprocessed_data.tsv', sep='\t')
     
     uncorrected['text'] = uncorrected['text'].apply(preprocessor.preprocess)
-    corrected['text'] = corrected['text'].apply(preprocessor.preprocess)
+    corrected['text'] = corrected['comment'].apply(preprocessor.preprocess)
+    processed['text'] = processed['preprocessed'].apply(preprocessor.preprocess)
 
     # extract the important features
     print("extraction of features..")
@@ -103,11 +105,15 @@ if __name__ == "__main__":
 
     corrected['offensive_words_count'] = corrected['text'].apply(feature_extractor.find_offensive_words)
     corrected['caps_words_count'] = corrected['text'].apply(feature_extractor.find_capsed_words)
+    
+    processed['offensive_words_count'] = processed['text'].apply(feature_extractor.find_offensive_words)
+    processed['caps_words_count'] = processed['text'].apply(feature_extractor.find_capsed_words)
 
     # if there is no sentiment data, label it automatically
     print("initiating sentiment analyzer..")
     uncorrected = SentimentAnalyzer().sentiment_label_dataframe(uncorrected)
     corrected = SentimentAnalyzer().sentiment_label_dataframe(corrected)
+    processed = SentimentAnalyzer().sentiment_label_dataframe(processed)
 
     # acquire TD-IDF features for uncor
     print("acquring TF-IDF features for uncor..")
@@ -131,7 +137,7 @@ if __name__ == "__main__":
     X_uncor = DataFrame(M)
 
     # acquire TD-IDF features for cor
-    print("acquring TF-IDF features for uncor..")
+    print("acquring TF-IDF features for cor..")
     tfidf, vocab, idf_dict, _ = preprocessor.get_TFIDF_features(corrected,
                                                                 vectorizer=vectorizer,
                                                                 filter_stopwords=False)
@@ -150,11 +156,33 @@ if __name__ == "__main__":
     feature_names = variables + feature_extractor.get_feature_names()
 
     X_cor = DataFrame(M)
+    
+    # acquire TD-IDF features for proc
+    print("acquring TF-IDF features for proc..")
+    tfidf, vocab, idf_dict, _ = preprocessor.get_TFIDF_features(processed,
+                                                                vectorizer=vectorizer,
+                                                                filter_stopwords=False)
+    # preprocessing stage 2: Tokenize & Lemmatize
+    print("preprocessing stage 2..")
+    processed['text'] = processed['text'].apply(preprocessor.tokenize)
+    processed['text'] = processed['text'].apply(preprocessor.lemmatize)
+    # extracting the textual features
+    print("extracting features..")
+    feats = feature_extractor.get_feature_array(processed)
+    M = np.concatenate([tfidf, feats], axis=1)
+    variables = [''] * len(vocab)
+    for k, v in vocab.items():
+        variables[v] = k
+
+    feature_names = variables + feature_extractor.get_feature_names()
+
+    X_proc = DataFrame(M)
 
     # конец препроца #
 
     y_uncor = uncorrected['toxicity'].astype(int)
     y_cor = corrected['toxicity'].astype(int)
+    y_proc = processed['toxicity'].astype(int)
 
     ### PREDICT ON MY TEST ###
     print('predicting on uncorrected')
@@ -170,3 +198,10 @@ if __name__ == "__main__":
     print(report)
     plot_confusion_matrix(model, X_cor, y_cor)
     plot_matrix(y_cor, y_preds)
+    
+    print('predicting on preprocessed')
+    y_preds = model.predict(X_proc)
+    report = classification_report(y_proc, y_preds)
+    print(report)
+    plot_confusion_matrix(model, X_proc, y_proc)
+    plot_matrix(y_proc, y_preds)
