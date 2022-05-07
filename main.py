@@ -89,11 +89,11 @@ if __name__ == "__main__":
     model.fit(x_train, y_train)
 
     ### ADD MY TEST CORPORA ###
-    uncorrected = pd.read_csv('/content/toxicity-detection-thesis/data/uncorrected_data.tsv', sep='\t')
-    corrected = pd.read_csv('/content/toxicity-detection-thesis/data/corrected_data.tsv', sep='\t')
-    processed = pd.read_csv('/content/toxicity-detection-thesis/data/preprocessed_data.tsv', sep='\t')
+    uncorrected = pd.read_csv('/content/toxicity-detection-thesis/data/uncorrected_data_NEW.tsv', sep='\t')
+    corrected = pd.read_csv('/content/toxicity-detection-thesis/data/corrected_data_NEW.tsv', sep='\t')
+    processed = pd.read_csv('/content/toxicity-detection-thesis/data/preprocessed_data_NEW.tsv', sep='\t')
     
-    uncorrected['text'] = uncorrected['text'].apply(preprocessor.preprocess)
+    uncorrected['text'] = uncorrected['comments'].apply(preprocessor.preprocess)
     corrected['text'] = corrected['corrected'].apply(preprocessor.preprocess)
     processed['text'] = processed['preprocessed'].apply(preprocessor.preprocess)
 
